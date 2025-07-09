@@ -1,0 +1,14 @@
+# Minimal dependencies for production
+flask
+pandas
+numpy
+matplotlib
+seaborn
+plotly
+requests
+flask-socketio
+flask-cors
+scikit-learn
+scipy
+python-dotenv
+gunicorn

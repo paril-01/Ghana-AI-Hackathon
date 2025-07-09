@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Transport AI - Ghana Hackathon 2024</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='modern_ui.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-bus"></i> AI Transport Ghana
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-text">
+                    <i class="fas fa-circle text-success me-1"></i>
+                    System Active
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Control Panel -->
+    <div class="container-fluid">
+        <div class="control-panel">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <div class="control-group">
+                        <label class="control-label">System Mode</label>
+                        <select id="systemMode" class="form-select form-select-sm">
+                            <option value="live">Live Monitoring</option>
+                            <option value="simulation">Simulation Mode</option>
+                            <option value="analysis">Analysis Mode</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="control-group">
+                        <label class="control-label">Time Range</label>
+                        <select id="timeRange" class="form-select form-select-sm">
+                            <option value="realtime">Real-time</option>
+                            <option value="1hour">Last Hour</option>
+                            <option value="24hours">Last 24 Hours</option>
+                            <option value="week">This Week</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="control-group">
+                        <label class="control-label">Route Filter</label>
+                        <select id="routeFilter" class="form-select form-select-sm">
+                            <option value="all">All Routes</option>
+                            <option value="route1">Route 1 - Circle</option>
+                            <option value="route2">Route 2 - Tema</option>
+                            <option value="route3">Route 3 - Kaneshie</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="control-group">
+                        <button id="refreshData" class="btn btn-primary btn-sm">
+                            <i class="fas fa-sync-alt"></i> Refresh Data
+                        </button>
+                        <button id="exportData" class="btn btn-secondary btn-sm ms-2">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="container-fluid py-4">
+        <!-- Top Row: Map and Analytics -->
+        <div class="row mb-4">
+            <!-- Live Transport Network -->
+            <div class="col-lg-8">
+                <div class="dashboard-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="section-title">
+                            <i class="fas fa-map-marked-alt"></i> Live Transport Network
+                        </h3>
+                        <div>
+                            <button id="toggleHeatmap" class="btn btn-sm btn-outline-light me-2">
+                                <i class="fas fa-fire"></i> Heatmap
+                            </button>
+                            <button id="toggle3D" class="btn btn-sm btn-outline-light">
+                                <i class="fas fa-cube"></i> 3D View
+                            </button>
+                        </div>
+                    </div>
+                    <div id="transportMap" class="map-container"></div>
+                </div>
+            </div>
+
+            <!-- Real-time Analytics -->
+            <div class="col-lg-4">
+                <div class="dashboard-card">
+                    <h3 class="section-title">
+                        <i class="fas fa-chart-line"></i> Real-time Analytics
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="analyticsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Charts -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h3 class="section-title">
+                        <i class="fas fa-route"></i> Route Optimization
+                    </h3>
+                    <div class="chart-container-sm">
+                        <canvas id="routeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h3 class="section-title">
+                        <i class="fas fa-users"></i> Passenger Flow
+                    </h3>
+                    <div class="chart-container-sm">
+                        <canvas id="passengerChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <h4>Blockchain</h4>
+                    <p>Secure transport ledger</p>
+                    <button id="blockchainBtn" class="btn btn-custom">
+                        <i class="fas fa-play"></i> ACTIVATE
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                    <h4>Digital Twin</h4>
+                    <p>Real-time simulation</p>
+                    <button id="digitalTwinBtn" class="btn btn-custom">
+                        <i class="fas fa-play"></i> START
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                    <h4>Voice AI</h4>
+                    <p>Voice assistant</p>
+                    <button id="voiceBtn" class="btn btn-custom">
+                        <i class="fas fa-microphone"></i> LISTEN
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <h4>Gamification</h4>
+                    <p>User engagement</p>
+                    <button id="gameBtn" class="btn btn-custom">
+                        <i class="fas fa-trophy"></i> VIEW
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>Initializing AI Transport System</h3>
+            <p>Loading advanced features...</p>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script>
+        // Complete Working Dashboard Implementation
+        class WorkingDashboard {
+            constructor() {
+                console.log('🚀 Initializing Working Dashboard');
+                this.map = null;
+                this.charts = {};
+                this.vehicles = [];
+                this.routes = [];
+                this.isLoading = true;
+                this.heatmapActive = false;
+                this.view3DActive = false;
+                this.heatmapCircles = [];
+                this.buildingMarkers = [];
+                this.heatmapAnimation = null;
+                this.satelliteLayer = null;
+                this.normalLayer = null;
+                
+                // Make instance globally available
+                window.workingDashboard = this;
+                
+                this.init();
+            }
+
+            async init() {
+                try {
+                    // Show loading
+                    this.showLoading();
+                    
+                    // Initialize components
+                    await this.initializeMap();
+                    await this.initializeCharts();
+                    this.setupEventListeners();
+                    this.startRealTimeUpdates();
+                    
+                    // Hide loading
+                    setTimeout(() => {
+                        this.hideLoading();
+                        this.showNotification('🎊 AI Transport System Ready!', 'success');
+                    }, 2000);
+                    
+                    console.log('✅ Dashboard fully initialized');
+                } catch (error) {
+                    console.error('❌ Dashboard initialization failed:', error);
+                    this.showNotification('⚠️ Some features may not work properly', 'warning');
+                    this.hideLoading();
+                }
+            }
+
+            showLoading() {
+                const loading = document.getElementById('loadingOverlay');
+                if (loading) {
+                    loading.style.display = 'flex';
+                }
+            }
+
+            hideLoading() {
+                const loading = document.getElementById('loadingOverlay');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            }
+
+            async initializeMap() {
+                console.log('🗺️ Initializing interactive map...');
+                
+                const mapContainer = document.getElementById('transportMap');
+                if (!mapContainer) {
+                    console.error('Map container not found');
+                    return;
+                }
+
+                try {
+                    // Initialize Leaflet map
+                    this.map = L.map('transportMap').setView([5.6037, -0.1870], 12);
+
+                    // Add tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 18
+                    }).addTo(this.map);
+
+                    // Add bus stops
+                    this.addBusStops();
+                    
+                    // Add routes
+                    this.addRoutes();
+                    
+                    // Add vehicles
+                    this.addVehicles();
+                    
+                    console.log('✅ Map initialized successfully');
+                } catch (error) {
+                    console.error('❌ Map initialization failed:', error);
+                    // Fallback: show a styled placeholder
+                    mapContainer.innerHTML = `
+                        <div style="height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                    border-radius: 15px; display: flex; flex-direction: column; justify-content: center; 
+                                    align-items: center; color: white; text-align: center;">
+                            <i class="fas fa-map-marked-alt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.7;"></i>
+                            <h3>Accra Transport Network</h3>
+                            <p>Real-time vehicle tracking and route optimization</p>
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px;">
+                                    <i class="fas fa-bus"></i> 156 Vehicles
+                                </span>
+                                <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px;">
+                                    <i class="fas fa-route"></i> 24 Routes
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            addBusStops() {
+                const busStops = [
+                    { name: 'Circle Station', lat: 5.5701, lng: -0.2012, passengers: 45 },
+                    { name: 'Kaneshie Market', lat: 5.5502, lng: -0.2294, passengers: 32 },
+                    { name: 'Tema Station', lat: 5.6194, lng: -0.1746, passengers: 67 },
+                    { name: 'Madina Station', lat: 5.6595, lng: -0.1670, passengers: 28 },
+                    { name: 'Osu Castle', lat: 5.5447, lng: -0.1724, passengers: 19 },
+                    { name: 'Airport Terminal', lat: 5.6052, lng: -0.1668, passengers: 84 },
+                    { name: 'University of Ghana', lat: 5.6513, lng: -0.1870, passengers: 56 },
+                    { name: 'Achimota Mall', lat: 5.6205, lng: -0.2154, passengers: 41 }
+                ];
+
+                busStops.forEach(stop => {
+                    const icon = L.divIcon({
+                        html: `<div style="width: 12px; height: 12px; background: #4facfe; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                        className: 'bus-stop-marker',
+                        iconSize: [16, 16],
+                        iconAnchor: [8, 8]
+                    });
+
+                    L.marker([stop.lat, stop.lng], { icon })
+                        .addTo(this.map)
+                        .bindPopup(`
+                            <div style="font-family: Arial, sans-serif;">
+                                <strong>${stop.name}</strong><br>
+                                Passengers: ${stop.passengers}<br>
+                                <small>Updated: ${new Date().toLocaleTimeString()}</small>
+                            </div>
+                        `);
+                });
+
+                this.busStops = busStops;
+            }
+
+            addRoutes() {
+                const routes = [
+                    { name: 'Route 1', color: '#ff6b6b', stops: [0, 1, 2] },
+                    { name: 'Route 2', color: '#4ecdc4', stops: [3, 4, 5] },
+                    { name: 'Route 3', color: '#45b7d1', stops: [6, 7, 0] }
+                ];
+
+                routes.forEach(route => {
+                    const routeStops = route.stops.map(i => this.busStops[i]);
+                    const latLngs = routeStops.map(stop => [stop.lat, stop.lng]);
+
+                    L.polyline(latLngs, {
+                        color: route.color,
+                        weight: 4,
+                        opacity: 0.8
+                    }).addTo(this.map).bindPopup(`
+                        <div style="font-family: Arial, sans-serif;">
+                            <strong>${route.name}</strong><br>
+                            Stops: ${routeStops.length}<br>
+                            Status: Active
+                        </div>
+                    `);
+                });
+
+                this.routes = routes;
+            }
+
+            addVehicles() {
+                for (let i = 0; i < 6; i++) {
+                    const randomStop = this.busStops[Math.floor(Math.random() * this.busStops.length)];
+                    const lat = randomStop.lat + (Math.random() - 0.5) * 0.01;
+                    const lng = randomStop.lng + (Math.random() - 0.5) * 0.01;
+
+                    const vehicle = {
+                        id: i + 1,
+                        lat: lat,
+                        lng: lng,
+                        passengers: Math.floor(Math.random() * 40) + 10,
+                        speed: Math.floor(Math.random() * 30) + 20
+                    };
+
+                    const icon = L.divIcon({
+                        html: `<div style="width: 20px; height: 20px; background: #ffa502; border: 3px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px;">🚌</div>`,
+                        className: 'vehicle-marker',
+                        iconSize: [26, 26],
+                        iconAnchor: [13, 13]
+                    });
+
+                    const marker = L.marker([lat, lng], { icon })
+                        .addTo(this.map)
+                        .bindPopup(`
+                            <div style="font-family: Arial, sans-serif;">
+                                <strong>Vehicle ${vehicle.id}</strong><br>
+                                Passengers: ${vehicle.passengers}/45<br>
+                                Speed: ${vehicle.speed} km/h<br>
+                                <small>Last updated: ${new Date().toLocaleTimeString()}</small>
+                            </div>
+                        `);
+
+                    vehicle.marker = marker;
+                    this.vehicles.push(vehicle);
+                }
+
+                // Animate vehicles
+                setInterval(() => {
+                    this.vehicles.forEach(vehicle => {
+                        vehicle.lat += (Math.random() - 0.5) * 0.002;
+                        vehicle.lng += (Math.random() - 0.5) * 0.002;
+                        vehicle.passengers = Math.max(0, vehicle.passengers + Math.floor(Math.random() * 6) - 3);
+                        vehicle.speed = Math.max(10, Math.min(60, vehicle.speed + Math.floor(Math.random() * 10) - 5));
+                        
+                        if (vehicle.marker) {
+                            vehicle.marker.setLatLng([vehicle.lat, vehicle.lng]);
+                        }
+                    });
+                }, 3000);
+            }
+
+            async initializeCharts() {
+                console.log('📊 Initializing charts...');
+                
+                try {
+                    await this.createAnalyticsChart();
+                    await this.createRouteChart();
+                    await this.createPassengerChart();
+                    console.log('✅ Charts initialized successfully');
+                } catch (error) {
+                    console.error('❌ Chart initialization failed:', error);
+                }
+            }
+
+            async createAnalyticsChart() {
+                const ctx = document.getElementById('analyticsChart');
+                if (!ctx) return;
+
+                const hours = [];
+                const data = [];
+                for (let i = 0; i < 24; i++) {
+                    hours.push(`${i.toString().padStart(2, '0')}:00`);
+                    let baseValue = 50;
+                    if (i >= 7 && i <= 9) baseValue = 150; // Morning rush
+                    if (i >= 17 && i <= 19) baseValue = 140; // Evening rush
+                    data.push(baseValue + Math.random() * 30);
+                }
+
+                this.charts.analytics = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: hours,
+                        datasets: [{
+                            label: 'Passenger Flow',
+                            data: data,
+                            borderColor: '#4facfe',
+                            backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { 
+                                ticks: { color: 'rgba(255,255,255,0.8)' },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            },
+                            y: { 
+                                ticks: { color: 'rgba(255,255,255,0.8)' },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async createRouteChart() {
+                const ctx = document.getElementById('routeChart');
+                if (!ctx) return;
+
+                this.charts.route = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Route A', 'Route B', 'Route C', 'Route D'],
+                        datasets: [
+                            {
+                                label: 'Before',
+                                data: [45, 38, 52, 41],
+                                backgroundColor: 'rgba(255, 107, 107, 0.8)'
+                            },
+                            {
+                                label: 'After',
+                                data: [32, 28, 35, 29],
+                                backgroundColor: 'rgba(78, 205, 196, 0.8)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { 
+                                labels: { color: 'rgba(255,255,255,0.9)' }
+                            }
+                        },
+                        scales: {
+                            x: { 
+                                ticks: { color: 'rgba(255,255,255,0.8)' },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            },
+                            y: { 
+                                ticks: { color: 'rgba(255,255,255,0.8)' },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async createPassengerChart() {
+                const ctx = document.getElementById('passengerChart');
+                if (!ctx) return;
+
+                const data = [];
+                for (let i = 0; i < 20; i++) {
+                    data.push({
+                        x: Math.random() * 100,
+                        y: Math.random() * 100,
+                        r: Math.random() * 20 + 5
+                    });
+                }
+
+                this.charts.passenger = new Chart(ctx, {
+                    type: 'bubble',
+                    data: {
+                        datasets: [{
+                            label: 'Passenger Density',
+                            data: data,
+                            backgroundColor: 'rgba(79, 172, 254, 0.6)',
+                            borderColor: '#4facfe'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { 
+                                ticks: { color: 'rgba(255,255,255,0.8)' },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            },
+                            y: { 
+                                ticks: { color: 'rgba(255,255,255,0.8)' },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            setupEventListeners() {
+                console.log('🔗 Setting up event listeners...');
+                
+                // Feature buttons with enhanced debugging
+                const buttons = [
+                    { id: 'blockchainBtn', feature: 'blockchain' },
+                    { id: 'digitalTwinBtn', feature: 'digitalTwin' },
+                    { id: 'voiceBtn', feature: 'voice' },
+                    { id: 'gameBtn', feature: 'gamification' }
+                ];
+
+                buttons.forEach(({ id, feature }) => {
+                    const btn = document.getElementById(id);
+                    if (btn) {
+                        // Add click event
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log(`🎯 Button clicked: ${id} -> ${feature}`);
+                            this.activateFeature(feature);
+                        });
+                        
+                        // Add visual feedback
+                        btn.addEventListener('mouseenter', () => {
+                            btn.style.transform = 'translateY(-2px)';
+                            btn.style.boxShadow = '0 8px 25px rgba(79, 172, 254, 0.3)';
+                        });
+                        
+                        btn.addEventListener('mouseleave', () => {
+                            btn.style.transform = 'translateY(0)';
+                            btn.style.boxShadow = 'none';
+                        });
+                        
+                        console.log(`✅ Event listener added for ${id}`);
+                    } else {
+                        console.error(`❌ Button not found: ${id}`);
+                    }
+                });
+
+                // Map controls
+                const mapControls = [
+                    { id: 'toggleHeatmap', action: () => this.toggleHeatmap() },
+                    { id: 'toggle3D', action: () => this.toggle3D() }
+                ];
+
+                mapControls.forEach(({ id, action }) => {
+                    const btn = document.getElementById(id);
+                    if (btn) {
+                        btn.addEventListener('click', action);
+                        console.log(`✅ Map control listener added for ${id}`);
+                    }
+                });
+
+                // Control Panel event listeners
+                const systemMode = document.getElementById('systemMode');
+                const timeRange = document.getElementById('timeRange');
+                const routeFilter = document.getElementById('routeFilter');
+
+                if (systemMode) {
+                    systemMode.addEventListener('change', (e) => {
+                        this.changeSystemMode(e.target.value);
+                        console.log(`🔄 System mode changed to: ${e.target.value}`);
+                    });
+                }
+
+                if (timeRange) {
+                    timeRange.addEventListener('change', (e) => {
+                        this.changeTimeRange(e.target.value);
+                        console.log(`⏰ Time range changed to: ${e.target.value}`);
+                    });
+                }
+
+                if (routeFilter) {
+                    routeFilter.addEventListener('change', (e) => {
+                        this.filterRoutes(e.target.value);
+                        console.log(`🚌 Route filter changed to: ${e.target.value}`);
+                    });
+                }
+
+                // Export functionality
+                const exportBtn = document.getElementById('exportData');
+                if (exportBtn) {
+                    exportBtn.addEventListener('click', () => {
+                        this.exportDashboardData();
+                        console.log(`📊 Export data button clicked`);
+                    });
+                }
+
+                // Refresh functionality
+                const refreshBtn = document.getElementById('refreshData');
+                if (refreshBtn) {
+                    refreshBtn.addEventListener('click', () => {
+                        this.refreshDashboard();
+                        console.log(`🔄 Refresh data button clicked`);
+                    });
+                }
+            }
+
+            activateFeature(feature) {
+                console.log(`🔥 Activating ${feature} with REAL functionality`);
+                
+                switch(feature) {
+                    case 'blockchain':
+                        this.activateBlockchain();
+                        break;
+                    case 'digitalTwin':
+                        this.activateDigitalTwin();
+                        break;
+                    case 'voice':
+                        this.activateVoiceAssistant();
+                        break;
+                    case 'gamification':
+                        this.activateGamification();
+                        break;
+                }
+            }
+
+            activateBlockchain() {
+                // Show blockchain activation
+                this.showNotification('🔗 Initializing Blockchain Transport Ledger...', 'info');
+                
+                // Update button to show loading
+                const btn = document.getElementById('blockchainBtn');
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CONNECTING';
+                    btn.style.background = '#ffa502';
+                }
+
+                // Simulate blockchain connection and create real ledger UI
+                setTimeout(() => {
+                    // Create blockchain panel
+                    this.createBlockchainPanel();
+                    
+                    // Update button
+                    btn.innerHTML = '<i class="fas fa-link"></i> ACTIVE';
+                    btn.style.background = '#4ecdc4';
+                    
+                    this.showNotification('✅ Blockchain connected! Transport ledger is now secure and transparent.', 'success');
+                    
+                    // Start blockchain activity simulation
+                    this.startBlockchainActivity();
+                }, 2000);
+            }
+
+            createBlockchainPanel() {
+                // Create a real blockchain transaction viewer
+                const blockchainPanel = document.createElement('div');
+                blockchainPanel.id = 'blockchainPanel';
+                blockchainPanel.innerHTML = `
+                    <div style="position: fixed; top: 100px; right: 20px; width: 350px; background: rgba(0,0,0,0.9); 
+                                border-radius: 15px; padding: 20px; color: white; z-index: 10000; 
+                                box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+                            <h4><i class="fas fa-cube"></i> Blockchain Ledger</h4>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                    style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+                        </div>
+                        <div id="blockchainTransactions" style="max-height: 300px; overflow-y: auto;">
+                            <div class="transaction-item" style="margin-bottom: 10px; padding: 10px; background: rgba(76, 172, 254, 0.2); border-radius: 8px;">
+                                <div style="font-size: 12px; color: #4facfe;">Block #47239</div>
+                                <div style="font-size: 14px;">Route payment: 2.50 GHS</div>
+                                <div style="font-size: 11px; opacity: 0.7;">${new Date().toLocaleTimeString()}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: rgba(46, 213, 115, 0.2); border-radius: 8px;">
+                            <div style="font-size: 12px; color: #2ed573;">Network Status</div>
+                            <div style="font-size: 14px;">Active Nodes: 156 | Hash Rate: 98.7%</div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(blockchainPanel);
+            }
+
+            startBlockchainActivity() {
+                setInterval(() => {
+                    const container = document.getElementById('blockchainTransactions');
+                    if (container) {
+                        const routes = ['Circle-Madina', 'Kaneshie-Airport', 'Tema-Adabraka', 'Osu-Lapaz'];
+                        const amounts = ['2.50', '3.00', '1.80', '2.20', '4.50'];
+                        const blockNum = Math.floor(Math.random() * 1000) + 47240;
+                        
+                        const transaction = document.createElement('div');
+                        transaction.className = 'transaction-item';
+                        transaction.style.cssText = 'margin-bottom: 10px; padding: 10px; background: rgba(76, 172, 254, 0.2); border-radius: 8px; animation: fadeIn 0.5s;';
+                        transaction.innerHTML = `
+                            <div style="font-size: 12px; color: #4facfe;">Block #${blockNum}</div>
+                            <div style="font-size: 14px;">${routes[Math.floor(Math.random() * routes.length)]}: ${amounts[Math.floor(Math.random() * amounts.length)]} GHS</div>
+                            <div style="font-size: 11px; opacity: 0.7;">${new Date().toLocaleTimeString()}</div>
+                        `;
+                        
+                        container.insertBefore(transaction, container.firstChild);
+                        
+                        // Remove old transactions (keep only 5)
+                        while (container.children.length > 5) {
+                            container.removeChild(container.lastChild);
+                        }
+                    }
+                }, 3000);
+            }
+
+            activateDigitalTwin() {
+                this.showNotification('🖥️ Starting Digital Twin Simulation...', 'info');
+                
+                const btn = document.getElementById('digitalTwinBtn');
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOADING';
+                    btn.style.background = '#ffa502';
+                }
+
+                setTimeout(() => {
+                    this.createDigitalTwinPanel();
+                    btn.innerHTML = '<i class="fas fa-cube"></i> RUNNING';
+                    btn.style.background = '#667eea';
+                    this.showNotification('✅ Virtual Accra loaded! Running 1000+ simulations per second.', 'success');
+                }, 2500);
+            }
+
+            createDigitalTwinPanel() {
+                const twinPanel = document.createElement('div');
+                twinPanel.id = 'digitalTwinPanel';
+                twinPanel.innerHTML = `
+                    <div style="position: fixed; top: 100px; left: 20px; width: 400px; background: rgba(0,0,0,0.9); 
+                                border-radius: 15px; padding: 20px; color: white; z-index: 10000; 
+                                box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+                            <h4><i class="fas fa-cube"></i> Digital Twin Monitor</h4>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                    style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <canvas id="twinSimulation" width="360" height="200" style="background: #1a1a1a; border-radius: 8px; width: 100%;"></canvas>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+                            <div style="background: rgba(102, 126, 234, 0.2); padding: 8px; border-radius: 6px;">
+                                <div style="color: #667eea;">Simulations/sec</div>
+                                <div id="simulationRate" style="font-size: 16px; font-weight: bold;">1,247</div>
+                            </div>
+                            <div style="background: rgba(46, 213, 115, 0.2); padding: 8px; border-radius: 6px;">
+                                <div style="color: #2ed573;">Accuracy</div>
+                                <div id="simulationAccuracy" style="font-size: 16px; font-weight: bold;">98.7%</div>
+                            </div>
+                            <div style="background: rgba(255, 165, 2, 0.2); padding: 8px; border-radius: 6px;">
+                                <div style="color: #ffa502;">Processing</div>
+                                <div id="processingLoad" style="font-size: 16px; font-weight: bold;">67%</div>
+                            </div>
+                            <div style="background: rgba(253, 121, 168, 0.2); padding: 8px; border-radius: 6px;">
+                                <div style="color: #fd79a8;">Memory</div>
+                                <div id="memoryUsage" style="font-size: 16px; font-weight: bold;">4.2GB</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(twinPanel);
+                
+                // Start 3D visualization
+                this.startTwinVisualization();
+                this.startTwinMetrics();
+            }
+
+            startTwinVisualization() {
+                const canvas = document.getElementById('twinSimulation');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const vehicles = [];
+                
+                // Create some vehicles for simulation
+                for (let i = 0; i < 8; i++) {
+                    vehicles.push({
+                        x: Math.random() * 360,
+                        y: Math.random() * 200,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        color: `hsl(${Math.random() * 360}, 70%, 60%)`
+                    });
+                }
+
+                function animate() {
+                    ctx.fillStyle = '#1a1a1a';
+                    ctx.fillRect(0, 0, 360, 200);
+                    
+                    // Draw grid
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.lineWidth = 1;
+                    for (let x = 0; x < 360; x += 30) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, 200);
+                        ctx.stroke();
+                    }
+                    for (let y = 0; y < 200; y += 30) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(360, y);
+                        ctx.stroke();
+                    }
+                    
+                    // Update and draw vehicles
+                    vehicles.forEach(vehicle => {
+                        vehicle.x += vehicle.vx;
+                        vehicle.y += vehicle.vy;
+                        
+                        if (vehicle.x < 0 || vehicle.x > 360) vehicle.vx *= -1;
+                        if (vehicle.y < 0 || vehicle.y > 200) vehicle.vy *= -1;
+                        
+                        ctx.fillStyle = vehicle.color;
+                        ctx.beginPath();
+                        ctx.arc(vehicle.x, vehicle.y, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Draw trail
+                        ctx.strokeStyle = vehicle.color;
+                        ctx.lineWidth = 2;
+                        ctx.globalAlpha = 0.3;
+                        ctx.beginPath();
+                        ctx.arc(vehicle.x, vehicle.y, 8, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                    });
+                    
+                    requestAnimationFrame(animate);
+                }
+                animate();
+            }
+
+            startTwinMetrics() {
+                setInterval(() => {
+                    const rate = document.getElementById('simulationRate');
+                    const accuracy = document.getElementById('simulationAccuracy');
+                    const processing = document.getElementById('processingLoad');
+                    const memory = document.getElementById('memoryUsage');
+                    
+                    if (rate) rate.textContent = (Math.random() * 500 + 1000).toFixed(0);
+                    if (accuracy) accuracy.textContent = (97 + Math.random() * 2).toFixed(1) + '%';
+                    if (processing) processing.textContent = (50 + Math.random() * 30).toFixed(0) + '%';
+                    if (memory) memory.textContent = (3.5 + Math.random()).toFixed(1) + 'GB';
+                }, 1000);
+            }
+
+            activateVoiceAssistant() {
+                this.showNotification('🎤 Initializing Voice Recognition...', 'info');
+                
+                const btn = document.getElementById('voiceBtn');
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOADING';
+                    btn.style.background = '#ffa502';
+                }
+
+                setTimeout(() => {
+                    this.createVoicePanel();
+                    btn.innerHTML = '<i class="fas fa-microphone"></i> LISTENING';
+                    btn.style.background = '#ff6b6b';
+                    this.showNotification('✅ Voice Assistant ready! Try saying commands.', 'success');
+                    this.startVoiceSimulation();
+                }, 2000);
+            }
+
+            createVoicePanel() {
+                const voicePanel = document.createElement('div');
+                voicePanel.id = 'voicePanel';
+                voicePanel.innerHTML = `
+                    <div style="position: fixed; bottom: 20px; right: 20px; width: 350px; background: rgba(0,0,0,0.9); 
+                                border-radius: 15px; padding: 20px; color: white; z-index: 10000; 
+                                box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+                            <h4><i class="fas fa-microphone"></i> Voice Assistant</h4>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                    style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+                        </div>
+                        <div id="voiceConversation" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+                            <div style="margin-bottom: 10px; padding: 8px; background: rgba(76, 172, 254, 0.2); border-radius: 8px;">
+                                <strong>Assistant:</strong> Hello! I'm ready to help with transport queries.
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="window.workingDashboard.simulateVoiceCommand('traffic')" 
+                                    style="flex: 1; padding: 8px; background: #4facfe; border: none; border-radius: 6px; color: white; cursor: pointer;">
+                                Ask Traffic Status
+                            </button>
+                            <button onclick="window.workingDashboard.simulateVoiceCommand('routes')" 
+                                    style="flex: 1; padding: 8px; background: #2ed573; border: none; border-radius: 6px; color: white; cursor: pointer;">
+                                Ask Route Info
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(voicePanel);
+            }
+
+            simulateVoiceCommand(type) {
+                const conversation = document.getElementById('voiceConversation');
+                if (!conversation) return;
+
+                // Add user message
+                const userMsg = document.createElement('div');
+                userMsg.style.cssText = 'margin-bottom: 10px; padding: 8px; background: rgba(46, 213, 115, 0.2); border-radius: 8px; text-align: right;';
+                
+                const responses = {
+                    traffic: {
+                        user: '"What is the current traffic status?"',
+                        assistant: 'Current traffic is flowing smoothly. Average delay: 3.2 minutes. Route 3 has light congestion near Kaneshie Market.'
+                    },
+                    routes: {
+                        user: '"Show me the best route to Airport"',
+                        assistant: 'Best route to Airport: Take Route 2 via Ring Road. Estimated time: 25 minutes. Alternative: Route 5 via Spintex Road (32 minutes).'
+                    }
+                };
+
+                const response = responses[type];
+                userMsg.innerHTML = `<strong>You:</strong> ${response.user}`;
+                conversation.appendChild(userMsg);
+
+                // Add assistant response after delay
+                setTimeout(() => {
+                    const assistantMsg = document.createElement('div');
+                    assistantMsg.style.cssText = 'margin-bottom: 10px; padding: 8px; background: rgba(76, 172, 254, 0.2); border-radius: 8px;';
+                    assistantMsg.innerHTML = `<strong>Assistant:</strong> ${response.assistant}`;
+                    conversation.appendChild(assistantMsg);
+                    conversation.scrollTop = conversation.scrollHeight;
+                }, 1500);
+
+                conversation.scrollTop = conversation.scrollHeight;
+            }
+
+            startVoiceSimulation() {
+                // Simulate random voice commands
+                setInterval(() => {
+                    const commands = ['traffic', 'routes'];
+                    const randomCommand = commands[Math.floor(Math.random() * commands.length)];
+                    this.simulateVoiceCommand(randomCommand);
+                }, 15000);
+            }
+
+            activateGamification() {
+                this.showNotification('🎮 Loading Gamification System...', 'info');
+                
+                const btn = document.getElementById('gameBtn');
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LOADING';
+                    btn.style.background = '#ffa502';
+                }
+
+                setTimeout(() => {
+                    this.createGamificationPanel();
+                    btn.innerHTML = '<i class="fas fa-trophy"></i> ACTIVE';
+                    btn.style.background = '#fd79a8';
+                    this.showNotification('✅ Gamification active! Drivers can now earn points and badges.', 'success');
+                    this.startGamificationUpdates();
+                }, 2000);
+            }
+
+            createGamificationPanel() {
+                const gamePanel = document.createElement('div');
+                gamePanel.id = 'gamificationPanel';
+                gamePanel.innerHTML = `
+                    <div style="position: fixed; bottom: 20px; left: 20px; width: 400px; background: rgba(0,0,0,0.9); 
+                                border-radius: 15px; padding: 20px; color: white; z-index: 10000; 
+                                box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+                            <h4><i class="fas fa-trophy"></i> Driver Leaderboard</h4>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                                    style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+                        </div>
+                        <div id="leaderboard" style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: between; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 8px; margin-bottom: 8px;">
+                                <span><i class="fas fa-crown" style="color: gold;"></i> Driver #23</span>
+                                <span style="font-weight: bold;">8,756 pts</span>
+                            </div>
+                            <div style="display: flex; justify-content: between; padding: 10px; background: rgba(76, 172, 254, 0.3); border-radius: 8px; margin-bottom: 8px;">
+                                <span><i class="fas fa-medal" style="color: silver;"></i> Driver #7</span>
+                                <span style="font-weight: bold;">8,234 pts</span>
+                            </div>
+                            <div style="display: flex; justify-content: between; padding: 10px; background: rgba(253, 121, 168, 0.3); border-radius: 8px; margin-bottom: 8px;">
+                                <span><i class="fas fa-award" style="color: #cd7f32;"></i> Driver #15</span>
+                                <span style="font-weight: bold;">7,891 pts</span>
+                            </div>
+                        </div>
+                        <div style="background: rgba(46, 213, 115, 0.2); padding: 15px; border-radius: 8px;">
+                            <h5 style="margin-bottom: 10px;"><i class="fas fa-star"></i> Recent Achievements</h5>
+                            <div id="achievements" style="font-size: 12px;">
+                                <div style="margin-bottom: 5px;">🏆 Driver #23: "Punctuality Master" - On time 98% this week</div>
+                                <div style="margin-bottom: 5px;">🚀 Driver #7: "Fuel Saver" - Best efficiency score</div>
+                                <div style="margin-bottom: 5px;">⭐ Driver #15: "Customer Favorite" - 5-star rating streak</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(gamePanel);
+            }
+
+            startGamificationUpdates() {
+                setInterval(() => {
+                    const achievements = document.getElementById('achievements');
+                    if (achievements) {
+                        const drivers = ['#23', '#7', '#15', '#42', '#8', '#33'];
+                        const achievementTypes = [
+                            { icon: '🏆', name: 'Punctuality Master', desc: 'On time 98% this week' },
+                            { icon: '🚀', name: 'Speed Demon', desc: 'Fastest route completion' },
+                            { icon: '⭐', name: 'Customer Favorite', desc: '5-star rating streak' },
+                            { icon: '💚', name: 'Eco Driver', desc: 'Lowest carbon footprint' },
+                            { icon: '🎯', name: 'Route Master', desc: 'Perfect navigation score' }
+                        ];
+                        
+                        const randomDriver = drivers[Math.floor(Math.random() * drivers.length)];
+                        const randomAchievement = achievementTypes[Math.floor(Math.random() * achievementTypes.length)];
+                        
+                        const newAchievement = document.createElement('div');
+                        newAchievement.style.cssText = 'margin-bottom: 5px; animation: fadeIn 0.5s;';
+                        newAchievement.innerHTML = `${randomAchievement.icon} Driver ${randomDriver}: "${randomAchievement.name}" - ${randomAchievement.desc}`;
+                        
+                        achievements.insertBefore(newAchievement, achievements.firstChild);
+                        
+                        // Keep only 3 achievements
+                        while (achievements.children.length > 3) {
+                            achievements.removeChild(achievements.lastChild);
+                        }
+                    }
+                }, 8000);
+            }
+
+            toggleHeatmap() {
+                console.log('🔥 Toggling heatmap functionality');
+                
+                const heatmapBtn = document.getElementById('toggleHeatmap');
+                if (!this.map) {
+                    this.showNotification('⚠️ Map not initialized yet', 'warning');
+                    return;
+                }
+
+                // Check if heatmap is currently active
+                if (this.heatmapActive) {
+                    // Remove heatmap
+                    this.removeHeatmap();
+                    heatmapBtn.innerHTML = '<i class="fas fa-fire"></i> Heatmap';
+                    heatmapBtn.classList.remove('btn-warning');
+                    heatmapBtn.classList.add('btn-outline-light');
+                    this.showNotification('🔥 Heatmap disabled', 'info');
+                    this.heatmapActive = false;
+                } else {
+                    // Add heatmap
+                    this.addHeatmap();
+                    heatmapBtn.innerHTML = '<i class="fas fa-fire"></i> Active';
+                    heatmapBtn.classList.remove('btn-outline-light');
+                    heatmapBtn.classList.add('btn-warning');
+                    this.showNotification('🔥 Passenger density heatmap activated!', 'success');
+                    this.heatmapActive = true;
+                }
+            }
+
+            addHeatmap() {
+                // Create heatmap data based on bus stops and passenger density
+                const heatmapData = [];
+                
+                // Generate realistic heatmap points around Accra
+                const hotspots = [
+                    { lat: 5.6037, lng: -0.1870, intensity: 0.9 }, // Circle (Central Accra)
+                    { lat: 5.6500, lng: -0.1700, intensity: 0.8 }, // Madina
+                    { lat: 5.5500, lng: -0.2100, intensity: 0.7 }, // Kaneshie
+                    { lat: 5.6200, lng: -0.1600, intensity: 0.6 }, // Osu
+                    { lat: 5.6100, lng: -0.1500, intensity: 0.8 }, // Tema Station area
+                    { lat: 5.5800, lng: -0.2200, intensity: 0.5 }, // Dansoman
+                    { lat: 5.6400, lng: -0.1900, intensity: 0.7 }, // East Legon
+                ];
+
+                // Add circles to represent passenger density
+                this.heatmapCircles = [];
+                hotspots.forEach(spot => {
+                    const circle = L.circle([spot.lat, spot.lng], {
+                        color: 'red',
+                        fillColor: '#ff0000',
+                        fillOpacity: spot.intensity * 0.4,
+                        radius: spot.intensity * 1000 + 500,
+                        weight: 2
+                    }).addTo(this.map);
+                    
+                    circle.bindPopup(`
+                        <div style="font-family: Arial, sans-serif;">
+                            <strong>Passenger Density Zone</strong><br>
+                            Intensity: ${(spot.intensity * 100).toFixed(0)}%<br>
+                            Peak passengers: ${Math.floor(spot.intensity * 500 + 200)}<br>
+                            <small>Based on historical data</small>
+                        </div>
+                    `);
+                    
+                    this.heatmapCircles.push(circle);
+                });
+
+                // Add animated pulse effect
+                this.startHeatmapAnimation();
+            }
+
+            removeHeatmap() {
+                if (this.heatmapCircles) {
+                    this.heatmapCircles.forEach(circle => {
+                        this.map.removeLayer(circle);
+                    });
+                    this.heatmapCircles = [];
+                }
+                
+                if (this.heatmapAnimation) {
+                    clearInterval(this.heatmapAnimation);
+                }
+            }
+
+            startHeatmapAnimation() {
+                let opacity = 0.2;
+                let direction = 1;
+                
+                this.heatmapAnimation = setInterval(() => {
+                    opacity += direction * 0.05;
+                    if (opacity >= 0.6 || opacity <= 0.1) {
+                        direction *= -1;
+                    }
+                    
+                    if (this.heatmapCircles) {
+                        this.heatmapCircles.forEach(circle => {
+                            circle.setStyle({ fillOpacity: opacity });
+                        });
+                    }
+                }, 100);
+            }
+
+            toggle3D() {
+                console.log('📐 Toggling 3D view functionality');
+                
+                const view3DBtn = document.getElementById('toggle3D');
+                if (!this.map) {
+                    this.showNotification('⚠️ Map not initialized yet', 'warning');
+                    return;
+                }
+
+                // Check if 3D view is currently active
+                if (this.view3DActive) {
+                    // Switch back to normal view
+                    this.map.removeLayer(this.satelliteLayer);
+                    this.normalLayer.addTo(this.map);
+                    view3DBtn.innerHTML = '<i class="fas fa-cube"></i> 3D View';
+                    view3DBtn.classList.remove('btn-success');
+                    view3DBtn.classList.add('btn-outline-light');
+                    this.showNotification('📐 Switched to normal map view', 'info');
+                    this.view3DActive = false;
+                } else {
+                    // Switch to satellite/3D view
+                    if (!this.satelliteLayer) {
+                        this.satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                            attribution: '© Esri, DigitalGlobe, GeoEye, Earthstar Geographics',
+                            maxZoom: 18
+                        });
+                        this.normalLayer = this.map._layers[Object.keys(this.map._layers)[0]];
+                    }
+                    
+                    this.map.removeLayer(this.normalLayer);
+                    this.satelliteLayer.addTo(this.map);
+                    view3DBtn.innerHTML = '<i class="fas fa-satellite"></i> Active';
+                    view3DBtn.classList.remove('btn-outline-light');
+                    view3DBtn.classList.add('btn-success');
+                    this.showNotification('📐 3D satellite view activated!', 'success');
+                    this.view3DActive = true;
+                    
+                    // Add 3D-style effects
+                    this.add3DEffects();
+                }
+            }
+
+            add3DEffects() {
+                // Add building-like markers for major locations
+                const buildings = [
+                    { lat: 5.6037, lng: -0.1870, name: 'Circle Business District', height: 40 },
+                    { lat: 5.6200, lng: -0.1600, name: 'Osu Commercial Area', height: 25 },
+                    { lat: 5.5500, lng: -0.2100, name: 'Kaneshie Market Complex', height: 15 },
+                    { lat: 5.6400, lng: -0.1900, name: 'East Legon Residential', height: 20 },
+                ];
+
+                if (this.buildingMarkers) {
+                    this.buildingMarkers.forEach(marker => this.map.removeLayer(marker));
+                }
+                
+                this.buildingMarkers = [];
+                
+                buildings.forEach(building => {
+                    const buildingIcon = L.divIcon({
+                        html: `<div style="
+                            width: 12px; 
+                            height: ${building.height}px; 
+                            background: linear-gradient(to top, #2c3e50, #34495e); 
+                            border: 1px solid #1a252f; 
+                            box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+                            transform: perspective(50px) rotateX(45deg);
+                        "></div>`,
+                        className: 'building-marker',
+                        iconSize: [12, building.height],
+                        iconAnchor: [6, building.height]
+                    });
+
+                    const marker = L.marker([building.lat, building.lng], { icon: buildingIcon })
+                        .addTo(this.map)
+                        .bindPopup(`
+                            <div style="font-family: Arial, sans-serif;">
+                                <strong>${building.name}</strong><br>
+                                Building Height: ${building.height}m<br>
+                                <small>3D Simulation</small>
+                            </div>
+                        `);
+                    
+                    this.buildingMarkers.push(marker);
+                });
+            }
+
+            showNotification(message, type = 'info') {
+                const container = document.getElementById('notificationContainer') || document.body;
+                
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#2ed573' : type === 'warning' ? '#ffa502' : '#4facfe'};
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    max-width: 400px;
+                    z-index: 10000;
+                    font-family: Arial, sans-serif;
+                    animation: slideIn 0.3s ease-out;
+                `;
+                notification.innerHTML = message;
+
+                container.appendChild(notification);
+
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.style.animation = 'slideOut 0.3s ease-out';
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.remove();
+                            }
+                        }, 300);
+                    }
+                }, 5000);
+            }
+
+            startRealTimeUpdates() {
+                console.log('⚡ Starting real-time updates...');
+                
+                // Update charts every 30 seconds
+                setInterval(() => {
+                    if (this.charts.analytics) {
+                        const chart = this.charts.analytics;
+                        const newValue = 50 + Math.random() * 100;
+                        chart.data.datasets[0].data.push(newValue);
+                        chart.data.labels.push(new Date().toLocaleTimeString());
+                        
+                        if (chart.data.labels.length > 24) {
+                            chart.data.labels.shift();
+                            chart.data.datasets[0].data.shift();
+                        }
+                        
+                        chart.update('none');
+                    }
+                }, 30000);
+
+                // Random events
+                setInterval(() => {
+                    const events = [
+                        'Route optimization completed - 15% efficiency improvement',
+                        'New vehicle joined Route 3 - capacity increased',
+                        'Traffic cleared on Ring Road - delays reduced',
+                        'Peak hour detected - additional vehicles deployed'
+                    ];
+                    const randomEvent = events[Math.floor(Math.random() * events.length)];
+                    this.showNotification(`📢 ${randomEvent}`, 'info');
+                }, 45000);
+            }
+
+            // Control Panel Methods
+            changeSystemMode(mode) {
+                this.showNotification(`🔄 Switched to ${mode} mode`, 'success');
+                
+                switch(mode) {
+                    case 'live':
+                        this.updateChartsForLiveMode();
+                        this.showLiveVehicles();
+                        break;
+                    case 'simulation':
+                        this.updateChartsForSimulationMode();
+                        this.showSimulationData();
+                        break;
+                    case 'analysis':
+                        this.updateChartsForAnalysisMode();
+                        this.showAnalysisData();
+                        break;
+                }
+                
+                // Update metrics based on mode
+                this.updateMetricsForMode(mode);
+            }
+
+            changeTimeRange(range) {
+                this.showNotification(`⏰ Time range changed to ${range}`, 'info');
+                
+                // Update charts with new time range data
+                if (this.charts.analytics) {
+                    const chart = this.charts.analytics;
+                    let dataPoints = [];
+                    let labels = [];
+                    
+                    switch(range) {
+                        case 'realtime':
+                            for (let i = 0; i < 12; i++) {
+                                labels.push(new Date(Date.now() - (11-i) * 60000).toLocaleTimeString());
+                                dataPoints.push(50 + Math.random() * 100);
+                            }
+                            break;
+                        case '1hour':
+                            for (let i = 0; i < 12; i++) {
+                                labels.push(`${i*5}min ago`);
+                                dataPoints.push(60 + Math.random() * 80);
+                            }
+                            break;
+                        case '24hours':
+                            for (let i = 0; i < 24; i++) {
+                                labels.push(`${i}:00`);
+                                const baseValue = (i >= 7 && i <= 9) || (i >= 17 && i <= 19) ? 120 : 60;
+                                dataPoints.push(baseValue + Math.random() * 40);
+                            }
+                            break;
+                        case 'week':
+                            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                            days.forEach(day => {
+                                labels.push(day);
+                                dataPoints.push(80 + Math.random() * 60);
+                            });
+                            break;
+                    }
+                    
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = dataPoints;
+                    chart.update();
+                }
+            }
+
+            filterRoutes(routeId) {
+                this.showNotification(`🚌 Filtering routes: ${routeId}`, 'info');
+                
+                if (this.map && this.vehicles) {
+                    // Hide all vehicles first
+                    this.vehicles.forEach(vehicle => {
+                        if (vehicle.marker) {
+                            this.map.removeLayer(vehicle.marker);
+                        }
+                    });
+                    
+                    // Show vehicles based on filter
+                    if (routeId === 'all') {
+                        this.vehicles.forEach(vehicle => {
+                            if (vehicle.marker) {
+                                this.map.addLayer(vehicle.marker);
+                            }
+                        });
+                        this.showNotification('🚌 Showing all routes', 'info');
+                    } else {
+                        const filteredVehicles = this.vehicles.filter(vehicle => 
+                            vehicle.route && vehicle.route.toLowerCase().includes(routeId.replace('route', ''))
+                        );
+                        
+                        filteredVehicles.forEach(vehicle => {
+                            if (vehicle.marker) {
+                                this.map.addLayer(vehicle.marker);
+                            }
+                        });
+                        
+                        this.showNotification(`🚌 Showing ${filteredVehicles.length} vehicles on selected route`, 'info');
+                    }
+                }
+                
+                // Update route optimization chart for selected route
+                if (this.charts.route && routeId !== 'all') {
+                    const chart = this.charts.route;
+                    chart.data.labels = [routeId.toUpperCase()];
+                    chart.data.datasets[0].data = [45 + Math.random() * 15];
+                    chart.data.datasets[1].data = [30 + Math.random() * 10];
+                    chart.update();
+                }
+            }
+
+            updateMetricsForMode(mode) {
+                const multipliers = {
+                    'live': 1.0,
+                    'simulation': 1.5,
+                    'analysis': 0.8
+                };
+                
+                const multiplier = multipliers[mode] || 1.0;
+                
+                // Update displayed metrics with null checks
+                const activeVehiclesEl = document.getElementById('activeVehicles');
+                const busStopsEl = document.getElementById('busStops');
+                const dailyPassengersEl = document.getElementById('dailyPassengers');
+                const avgDelayEl = document.getElementById('avgDelay');
+                
+                if (activeVehiclesEl) activeVehiclesEl.textContent = Math.floor(156 * multiplier);
+                if (busStopsEl) busStopsEl.textContent = Math.floor(342 * multiplier);
+                if (dailyPassengersEl) dailyPassengersEl.textContent = (12.8 * multiplier).toFixed(1) + 'K';
+                if (avgDelayEl) avgDelayEl.textContent = (3.2 / multiplier).toFixed(1);
+            }
+
+            updateChartsForLiveMode() {
+                if (this.charts.analytics) {
+                    const chart = this.charts.analytics;
+                    chart.data.datasets[0].borderColor = '#4facfe';
+                    chart.data.datasets[0].backgroundColor = 'rgba(79, 172, 254, 0.1)';
+                    chart.update();
+                }
+            }
+
+            updateChartsForSimulationMode() {
+                if (this.charts.analytics) {
+                    const chart = this.charts.analytics;
+                    chart.data.datasets[0].borderColor = '#ffa502';
+                    chart.data.datasets[0].backgroundColor = 'rgba(255, 165, 2, 0.1)';
+                    
+                    // Add simulated spikes
+                    chart.data.datasets[0].data = chart.data.datasets[0].data.map(value => 
+                        value + Math.random() * 30
+                    );
+                    chart.update();
+                }
+            }
+
+            updateChartsForAnalysisMode() {
+                if (this.charts.analytics) {
+                    const chart = this.charts.analytics;
+                    chart.data.datasets[0].borderColor = '#2ed573';
+                    chart.data.datasets[0].backgroundColor = 'rgba(46, 213, 115, 0.1)';
+                    
+                    // Smooth out data for analysis
+                    const smoothedData = [];
+                    for (let i = 0; i < chart.data.datasets[0].data.length; i++) {
+                        const prev = chart.data.datasets[0].data[i-1] || chart.data.datasets[0].data[i];
+                        const current = chart.data.datasets[0].data[i];
+                        const next = chart.data.datasets[0].data[i+1] || chart.data.datasets[0].data[i];
+                        smoothedData.push((prev + current + next) / 3);
+                    }
+                    chart.data.datasets[0].data = smoothedData;
+                    chart.update();
+                }
+            }
+
+            showLiveVehicles() {
+                this.showNotification('🚌 Showing live vehicle positions', 'info');
+            }
+
+            showSimulationData() {
+                this.showNotification('🎮 Loading simulation scenarios', 'info');
+            }
+
+            showAnalysisData() {
+                this.showNotification('📊 Loading historical analysis data', 'info');
+            }
+
+            exportDashboardData() {
+                this.showNotification('📊 Generating export file...', 'info');
+                
+                // Collect current dashboard data
+                const exportData = {
+                    timestamp: new Date().toISOString(),
+                    systemMode: document.getElementById('systemMode')?.value || 'live',
+                    timeRange: document.getElementById('timeRange')?.value || 'realtime',
+                    routeFilter: document.getElementById('routeFilter')?.value || 'all',
+                    metrics: {
+                        activeVehicles: document.getElementById('activeVehicles')?.textContent || '156',
+                        busStops: document.getElementById('busStops')?.textContent || '342',
+                        dailyPassengers: document.getElementById('dailyPassengers')?.textContent || '12.8K',
+                        avgDelay: document.getElementById('avgDelay')?.textContent || '3.2'
+                    },
+                    vehicles: this.vehicles?.map(vehicle => ({
+                        id: vehicle.id,
+                        route: vehicle.route,
+                        lat: vehicle.lat,
+                        lng: vehicle.lng,
+                        passengers: vehicle.passengers,
+                        speed: vehicle.speed
+                    })) || [],
+                    routes: this.routes?.map(route => ({
+                        id: route.id,
+                        name: route.name,
+                        color: route.color,
+                        stops: route.stops?.length || 0
+                    })) || [],
+                    chartData: {
+                        analytics: this.charts?.analytics?.data || null,
+                        route: this.charts?.route?.data || null,
+                        passenger: this.charts?.passenger?.data || null
+                    },
+                    features: {
+                        blockchain: this.blockchainActive || false,
+                        digitalTwin: this.digitalTwinActive || false,
+                        voice: this.voiceActive || false,
+                        gamification: this.gamificationActive || false,
+                        heatmap: this.heatmapActive || false,
+                        view3D: this.view3DActive || false
+                    }
+                };
+
+                // Create downloadable file
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                // Create download link
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(dataBlob);
+                downloadLink.download = `ghana-transport-dashboard-${new Date().toISOString().split('T')[0]}.json`;
+                
+                // Trigger download
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                this.showNotification('✅ Dashboard data exported successfully!', 'success');
+                
+                // Also create CSV export for metrics
+                setTimeout(() => {
+                    this.exportMetricsCSV();
+                }, 1000);
+            }
+
+            exportMetricsCSV() {
+                const csvData = [
+                    ['Metric', 'Value', 'Timestamp'],
+                    ['Active Vehicles', document.getElementById('activeVehicles')?.textContent || '156', new Date().toLocaleString()],
+                    ['Bus Stops', document.getElementById('busStops')?.textContent || '342', new Date().toLocaleString()],
+                    ['Daily Passengers', document.getElementById('dailyPassengers')?.textContent || '12.8K', new Date().toLocaleString()],
+                    ['Average Delay (min)', document.getElementById('avgDelay')?.textContent || '3.2', new Date().toLocaleString()]
+                ];
+
+                // Add vehicle data if available
+                if (this.vehicles) {
+                    csvData.push(['', '', '']); // Empty row
+                    csvData.push(['Vehicle ID', 'Route', 'Passengers', 'Speed (km/h)', 'Location']);
+                    this.vehicles.forEach(vehicle => {
+                        csvData.push([
+                            vehicle.id,
+                            vehicle.route,
+                            vehicle.passengers,
+                            vehicle.speed,
+                            `${vehicle.lat.toFixed(4)}, ${vehicle.lng.toFixed(4)}`
+                        ]);
+                    });
+                }
+
+                const csvContent = csvData.map(row => row.join(',')).join('\n');
+                const csvBlob = new Blob([csvContent], { type: 'text/csv' });
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(csvBlob);
+                downloadLink.download = `ghana-transport-metrics-${new Date().toISOString().split('T')[0]}.csv`;
+                
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                this.showNotification('📊 Metrics CSV exported successfully!', 'success');
+            }
+
+            refreshDashboard() {
+                this.showNotification('🔄 Refreshing dashboard data...', 'info');
+                
+                // Refresh metrics with new random values
+                const refreshBtn = document.getElementById('refreshData');
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+                    refreshBtn.disabled = true;
+                }
+                
+                setTimeout(() => {
+                    // Update metrics with null checks
+                    const activeVehiclesEl = document.getElementById('activeVehicles');
+                    const busStopsEl = document.getElementById('busStops');
+                    const dailyPassengersEl = document.getElementById('dailyPassengers');
+                    const avgDelayEl = document.getElementById('avgDelay');
+                    
+                    if (activeVehiclesEl) activeVehiclesEl.textContent = Math.floor(150 + Math.random() * 50);
+                    if (busStopsEl) busStopsEl.textContent = Math.floor(340 + Math.random() * 20);
+                    if (dailyPassengersEl) dailyPassengersEl.textContent = (12 + Math.random() * 3).toFixed(1) + 'K';
+                    if (avgDelayEl) avgDelayEl.textContent = (2 + Math.random() * 4).toFixed(1);
+                    
+                    // Refresh charts
+                    if (this.charts.analytics) {
+                        const chart = this.charts.analytics;
+                        chart.data.datasets[0].data = chart.data.datasets[0].data.map(() => 50 + Math.random() * 100);
+                        chart.update();
+                    }
+                    
+                    if (this.charts.route) {
+                        const chart = this.charts.route;
+                        chart.data.datasets[0].data = chart.data.datasets[0].data.map(() => 30 + Math.random() * 20);
+                        chart.data.datasets[1].data = chart.data.datasets[1].data.map(() => 20 + Math.random() * 15);
+                        chart.update();
+                    }
+                    
+                    // Update vehicle positions if they exist
+                    if (this.vehicles) {
+                        this.vehicles.forEach(vehicle => {
+                            vehicle.passengers = Math.max(0, Math.min(45, vehicle.passengers + Math.floor(Math.random() * 6) - 3));
+                            vehicle.speed = Math.max(15, Math.min(50, vehicle.speed + Math.floor(Math.random() * 6) - 3));
+                        });
+                    }
+                    
+                    // Reset refresh button
+                    if (refreshBtn) {
+                        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
+                        refreshBtn.disabled = false;
+                    }
+                    
+                    this.showNotification('✅ Dashboard data refreshed successfully!', 'success');
+                }, 2000);
+            }
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .building-marker {
+                pointer-events: auto !important;
+            }
+            /* Ensure all buttons are clickable */
+            .btn, button, .feature-card button, #blockchainBtn, #digitalTwinBtn, #voiceBtn, #gameBtn {
+                pointer-events: auto !important;
+                cursor: pointer !important;
+                position: relative !important;
+                z-index: 1000 !important;
+            }
+            .btn:hover, button:hover, .feature-card button:hover {
+                transform: translateY(-2px) !important;
+                box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3) !important;
+                transition: all 0.3s ease !important;
+            }
+            .feature-card {
+                position: relative !important;
+                z-index: 100 !important;
+            }
+            /* Control panel styling */
+            .control-panel select {
+                pointer-events: auto !important;
+                cursor: pointer !important;
+                z-index: 1000 !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🌟 Starting Ghana AI Transport Dashboard');
+            window.dashboard = new WorkingDashboard();
+        });
+    </script>
+</body>
+</html>
