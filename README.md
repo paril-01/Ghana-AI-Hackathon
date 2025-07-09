@@ -360,13 +360,7 @@ Gamification scoring system
 - 💰 **Cost Savings**: 20% operational cost reduction
 - 📈 **Economic Growth**: Better connectivity
 - 🏆 **Innovation Hub**: Technology advancement
-
-## 📞 CONTACT & SUPPORT
-
-**GitHub Repository**: [Your GitHub URL]  
-**Live Demo**: http://localhost:5000  
-**Documentation**: Available in `/docs` folder  
-**Support**: [Your Email]  
+  
 
 ---
 
